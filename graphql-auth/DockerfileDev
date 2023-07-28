@@ -1,0 +1,15 @@
+FROM node:20
+
+WORKDIR /app
+
+RUN npm install -g pnpm
+
+RUN pnpm add prisma --save-dev
+
+RUN pnpm install
+
+COPY . /app/
+
+CMD ["pnpm", "prisma", "migrate", "dev"]
+
+CMD ["pnpm", "dev"]

@@ -1,0 +1,59 @@
+version: "3.8"
+
+services:
+  mariadb:
+    image: mariadb
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-test}
+    healthcheck:
+      test: ["CMD", "sh", "-c", "mysql -uroot -p$MYSQL_ROOT_PASSWORD -e 'use $MYSQL_DATABASE;'"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    ports:
+      - "3306:3306"
+    volumes:
+      - mariadb-data:/var/lib/mysql
+
+  dev:
+      build:
+        context: .
+        dockerfile: DockerfileDev
+      restart: always
+      environment:
+        PORT: ${PORT:-3000}
+        DATABASE_URL: ${DATABASE_URL}
+        JWT_SECRET: ${JWT_SECRET}
+      ports:
+        - "${PORT:-3000}:3000"
+      volumes:
+        - .:/app
+        - /app/node_modules
+        - /app/.pnpm-store
+      depends_on:
+        mariadb:
+          condition: service_healthy
+
+  prod:
+      build:
+        context: .
+        dockerfile: DockerfileProd
+      restart: always
+      environment:
+        PORT: 5001
+        DATABASE_URL: ${DATABASE_URL}
+        JWT_SECRET: ${JWT_SECRET}
+      ports:
+        - "5001:3000"
+      volumes:
+        - .:/app
+        - /app/node_modules
+        - /app/.pnpm-store
+      depends_on:
+        mariadb:
+          condition: service_healthy
+
+volumes:
+  mariadb-data:
